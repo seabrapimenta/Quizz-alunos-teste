@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz da Aula - Avaliação</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --success: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    
+    .card { background: var(--card-bg); border-radius: 12px; padding: 30px; width: 100%; max-width: 500px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    h1, h2 { text-align: center; margin-bottom: 20px; color: var(--primary); }
+    p { margin-bottom: 20px; text-align: center; color: #6b7280; }
+
+    input[type="text"] { width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; margin-bottom: 20px; outline: none; }
+    input[type="text"]:focus { border-color: var(--primary); }
+
+    .btn { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; }
+    .btn:hover { background-color: var(--primary-hover); }
+
+    .options-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .option-btn { width: 100%; padding: 14px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; cursor: pointer; text-align: left; transition: 0.2s; }
+    .option-btn:hover { background: #eef2ff; border-color: var(--primary); }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { color: var(--primary); }
+    tr:nth-child(1) td { font-weight: bold; color: #d97706; } /* Highlight 1st place */
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <!-- Tela 1: Identificação -->
+    <div id="start-screen" class="screen active">
+      <h1>Quiz da Aula</h1>
+      <p>Digite seu nome completo para iniciar a avaliação do bimestre.</p>
+      <input type="text" id="student-name" placeholder="Seu nome completo..." autocomplete="off">
+      <button class="btn" onclick="startQuiz()">Começar Quiz</button>
+    </div>
+
+    <!-- Tela 2: Perguntas -->
+    <div id="quiz-screen" class="screen">
+      <h2 id="question-text">Pergunta aqui...</h2>
+      <div class="options-grid" id="options-container"></div>
+    </div>
+
+    <!-- Tela 3: Resultado e Ranking -->
+    <div id="result-screen" class="screen">
+      <h1>Fim do Quiz!</h1>
+      <p id="final-score">Sua pontuação: 0</p>
+      
+      <h2>🏆 Ranking da Turma</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nome</th>
+            <th>Pontos</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-body"></tbody>
+      </table>
+
+      <button class="btn" onclick="restartQuiz()">Responder Novamente</button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 📝 CONFIGURE SUAS PERGUNTAS AQUI
+    // ==========================================
+    const questions = [
+      {
+        question: "Qual é a capital do Brasil?",
+        options: ["São Paulo", "Rio de Janeiro", "Brasília", "Salvador"],
+        answer: 2 // Índice da resposta correta (0 = 1ª, 1 = 2ª, 2 = 3ª, etc)
+      },
+      {
+        question: "A Terra é o terceiro planeta a partir do Sol. (Certo ou Errado)",
+        options: ["Certo", "Errado"],
+        answer: 0
+      },
+      {
+        question: "Quanto é 7 x 8?",
+        options: ["54", "56", "64", "48"],
+        answer: 1
+      }
+    ];
+
+    // Variáveis de controle
+    let currentStudent = "";
+    let currentQuestionIndex = 0;
+    let score = 0;
+
+    function startQuiz() {
+      const nameInput = document.getElementById('student-name').value.trim();
+      if (!nameInput) {
+        alert("Por favor, digite seu nome!");
+        return;
+      }
+      currentStudent = nameInput;
+      currentQuestionIndex = 0;
+      score = 0;
+
+      showScreen('quiz-screen');
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      const q = questions[currentQuestionIndex];
+      document.getElementById('question-text').innerText = `(${currentQuestionIndex + 1}/${questions.length}) ${q.question}`;
+      
+      const container = document.getElementById('options-container');
+      container.innerHTML = '';
+
+      q.options.forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => selectOption(index);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectOption(selectedIndex) {
+      if (selectedIndex === questions[currentQuestionIndex].answer) {
+        score += 10; // 10 pontos por acerto
+      }
+
+      currentQuestionIndex++;
+      if (currentQuestionIndex < questions.length) {
+        loadQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function finishQuiz() {
+      document.getElementById('final-score').innerText = `${currentStudent}, você fez ${score} pontos!`;
+      
+      // Salva o resultado no banco de dados local (localStorage)
+      saveScore(currentStudent, score);
+      
+      // Atualiza e exibe a tabela de ranking
+      updateRankingTable();
+      showScreen('result-screen');
+    }
+
+    function saveScore(name, score) {
+      let leaderboard = JSON.parse(localStorage.getItem('quiz_ranking')) || [];
+      leaderboard.push({ name, score, date: new Date().toLocaleDateString('pt-BR') });
+      
+      // Ordena por maior pontuação
+      leaderboard.sort((a, b) => b.score - a.score);
+      
+      localStorage.setItem('quiz_ranking', JSON.stringify(leaderboard));
+    }
+
+    function updateRankingTable() {
+      let leaderboard = JSON.parse(localStorage.getItem('quiz_ranking')) || [];
+      const tbody = document.getElementById('ranking-body');
+      tbody.innerHTML = '';
+
+      leaderboard.forEach((entry, index) => {
+        const row = `<tr>
+          <td>${index + 1}º</td>
+          <td>${entry.name}</td>
+          <td>${entry.score} pts</td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function restartQuiz() {
+      document.getElementById('student-name').value = '';
+      showScreen('start-screen');
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+  </script>
+</body>
+</html>
